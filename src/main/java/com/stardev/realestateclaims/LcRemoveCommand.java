@@ -23,11 +23,12 @@ public final class LcRemoveCommand implements CommandExecutor {
             return true;
         }
         if (args[0].equalsIgnoreCase("all")) {
+            int total = plugin.getClaimManager().getAllClaims().size();
             plugin.getClaimManager().resetAllClaims();
             for (Claim claim : plugin.getClaimManager().getAllClaims()) {
                 plugin.getClaimManager().updateSign(claim);
             }
-            sender.sendMessage(Component.text("All claim owners and renters have been removed.").color(net.kyori.adventure.text.format.NamedTextColor.GREEN));
+            sender.sendMessage(Component.text("Removed owners and renters from " + total + " claims.").color(net.kyori.adventure.text.format.NamedTextColor.GREEN));
             return true;
         }
         int id;
