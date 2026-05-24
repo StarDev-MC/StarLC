@@ -51,6 +51,10 @@ public final class InventoryClickListener implements Listener {
             var player = (org.bukkit.entity.Player) event.getWhoClicked();
             if (item.getType() == Material.GREEN_WOOL) {
                 // Buy flow
+                if (claim.getRenter() != null) {
+                    player.sendMessage(Component.text("This land is already rented. You cannot buy it while someone is renting.").color(net.kyori.adventure.text.format.NamedTextColor.RED));
+                    return;
+                }
                 if (plugin.getEconomy().getBalance(player) < claim.getPrice()) {
                     player.sendMessage(Component.text("You do not have enough money to purchase this land.").color(net.kyori.adventure.text.format.NamedTextColor.RED));
                     return;

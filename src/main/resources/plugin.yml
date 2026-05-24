@@ -15,6 +15,10 @@ commands:
     description: Set a claim's purchase price.
     usage: /lcprice <id> <price>
     permission: realestate.admin
+  lcrent:
+    description: Set a claim's daily rent price.
+    usage: /lcrent <id> <price>
+    permission: realestate.admin
   lcdelete:
     description: Delete an existing claim.
     usage: /lcdelete <id>
@@ -29,6 +33,14 @@ commands:
   lcremove:
     description: Remove owner and renter from a claim or all claims.
     usage: /lcremove <id|all>
+    permission: realestate.admin
+  lcreset:
+    description: Reset a claim back to its default state (no owner/renter/trusted).
+    usage: /lcreset <id|all>
+    permission: realestate.admin
+  lcadminlist:
+    description: Open the admin GUI list of all claims with pagination.
+    usage: /lcadminlist [page]
     permission: realestate.admin
   lctrust:
     description: Trust a player inside your claim.

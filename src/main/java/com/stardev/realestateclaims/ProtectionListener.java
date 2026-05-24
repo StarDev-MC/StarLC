@@ -35,7 +35,7 @@ public final class ProtectionListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST, ignoreCancelled = false)
     public void onBlockBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
         // Prevent breaking of claim signs unless player has admin permission
@@ -46,14 +46,18 @@ public final class ProtectionListener implements Listener {
                 return;
             }
         }
-        if (!canUse(event.getPlayer(), block.getLocation())) {
+        if (canUse(event.getPlayer(), block.getLocation())) {
+            event.setCancelled(false);
+        } else {
             event.setCancelled(true);
         }
     }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(priority = org.bukkit.event.EventPriority.HIGHEST, ignoreCancelled = false)
     public void onBlockPlace(BlockPlaceEvent event) {
-        if (!canUse(event.getPlayer(), event.getBlock().getLocation())) {
+        if (canUse(event.getPlayer(), event.getBlock().getLocation())) {
+            event.setCancelled(false);
+        } else {
             event.setCancelled(true);
         }
     }

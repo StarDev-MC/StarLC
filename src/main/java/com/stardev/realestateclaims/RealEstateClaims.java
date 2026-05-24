@@ -32,6 +32,7 @@ public final class RealEstateClaims extends JavaPlugin {
     private final Map<UUID, Long> teleportCooldowns = new HashMap<>();
     private NamespacedKey claimIdKey;
     private NamespacedKey wandKey;
+    private AdminClaimListGui adminClaimListGui;
 
     private static final Component PURCHASE_TITLE = Component.text("Purchase Land");
     private static final Component CLAIM_INFO_TITLE = Component.text("Claim Info");
@@ -43,6 +44,7 @@ public final class RealEstateClaims extends JavaPlugin {
         saveResource("claims.yml", false);
         claimIdKey = new NamespacedKey(this, "claim-id");
         wandKey = new NamespacedKey(this, "realestate-wand");
+        adminClaimListGui = new AdminClaimListGui(this);
 
         claimManager = new ClaimManager(this);
         claimManager.loadClaims();
@@ -122,10 +124,13 @@ public final class RealEstateClaims extends JavaPlugin {
         getCommand("lcwand").setExecutor(new LcWandCommand(this));
         getCommand("setnewlc").setExecutor(new SetNewLcCommand(this));
         getCommand("lcprice").setExecutor(new LcPriceCommand(this));
+        getCommand("lcrent").setExecutor(new LcRentCommand(this));
         getCommand("lcdelete").setExecutor(new LcDeleteCommand(this));
         getCommand("lcinfo").setExecutor(new LcInfoCommand(this));
         getCommand("lcreload").setExecutor(new LcReloadCommand(this));
         getCommand("lcremove").setExecutor(new LcRemoveCommand(this));
+        getCommand("lcreset").setExecutor(new LcResetCommand(this));
+        getCommand("lcadminlist").setExecutor(new LcAdminListCommand(this, adminClaimListGui));
         getCommand("lctrust").setExecutor(new LcTrustCommand(this));
         getCommand("lcuntrust").setExecutor(new LcUntrustCommand(this));
         getCommand("lclist").setExecutor(new LcListCommand(this));

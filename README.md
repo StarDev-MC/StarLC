@@ -41,11 +41,15 @@ Default config values are stored in `src/main/resources/config.yml` and loaded i
 
 ```yaml
 default-price: 5000.0
+default-rent: 100.0
 teleport-cooldown: 30
+rent-recipient: ""
 ```
 
 - `default-price`: Starting price for newly created claims.
+- `default-rent`: Default daily rent price if a claim's rent price is not set.
 - `teleport-cooldown`: Seconds between owner teleport clicks in the claim GUI.
+- `rent-recipient`: Optional player name to receive rent payments. If blank, rent goes to the claim owner.
 
 ## Commands
 
@@ -60,6 +64,9 @@ teleport-cooldown: 30
 - `/lcprice <id> <price>`
   - Permission: `realestate.admin`
   - Sets the price for a claim.
+- `/lcrent <id> <price>`
+  - Permission: `realestate.admin`
+  - Sets the daily rent price for a claim.
 - `/lcdelete <id>`
   - Permission: `realestate.admin`
   - Deletes a claim and removes its sign.
@@ -69,6 +76,16 @@ teleport-cooldown: 30
 - `/lcreload`
   - Permission: `realestate.admin`
   - Reloads plugin configuration and claim data.
+- `/lcremove <id|all>`
+  - Permission: `realestate.admin`
+  - Removes owner and renter from a claim or all claims.
+- `/lcreset <id|all>`
+  - Permission: `realestate.admin`
+  - Resets a claim back to its default state (no owner/renter/trusted players).
+- `/lcadminlist [page]`
+  - Permission: `realestate.admin`
+  - Opens a paginated GUI showing all claims with their owner, renter, trusted players, and prices.
+  - Optionally specify a page number (defaults to page 1).
 
 ### Owner / Player Commands
 
@@ -107,6 +124,20 @@ teleport-cooldown: 30
 
 Claims are stored with full world information and automatically span from the world bottom to the world top.
 
+## Purchasing and Renting
+
+- Players can purchase claims via the sign GUI if they have sufficient funds.
+- Players can also rent claims on a daily basis (configurable price).
+- **Important:** While a claim is being rented, no one can purchase it. This prevents conflicts between renters and new owners.
+- The plugin charges rent automatically every 24 hours. If rent is overdue for more than 1 hour, the renter is evicted.
+- Renters are automatically added to the claim's trusted player list.
+
+## WorldGuard Integration
+
+- Block break and place events inside claims override WorldGuard restrictions at the highest priority.
+- This allows players to build/break inside their individual land claims even if they're within a larger WorldGuard region that would normally block those actions.
+- Only block break/place are overridden; other interactions (like interacting with containers or redstone) respect WorldGuard's original decisions.
+
 ## Claim Signs
 
 - Unowned sign text shows:
@@ -133,3 +164,5 @@ A workflow has been added at `.github/workflows/build-release.yml`:
 - The plugin uses chunk-based indexing for efficient claim lookups.
 - Claims and sign locations persist across restarts via `claims.yml`.
 - The owner GUI includes teleportation to the claim sign with cooldown.
+- Rent is collected automatically every hour. Overdue rent (more than 1 hour late) triggers automatic eviction.
+- Block break/place events inside claims run at HIGHEST priority and explicitly allow trusted actions, enabling them to override WorldGuard restrictions in large regions with multiple individual plots.
