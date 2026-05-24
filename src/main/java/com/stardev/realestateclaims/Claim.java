@@ -16,6 +16,9 @@ public final class Claim {
     private final int maxZ;
     private double price;
     private UUID owner;
+    private UUID renter;
+    private double rentPrice;
+    private long nextRentDue;
     private final Set<UUID> trusted;
     private boolean purchased;
     private Location signLocation;
@@ -32,6 +35,9 @@ public final class Claim {
         this.trusted = trusted == null ? new HashSet<>() : new HashSet<>(trusted);
         this.purchased = purchased;
         this.signLocation = signLocation;
+        this.renter = null;
+        this.rentPrice = 0.0;
+        this.nextRentDue = 0L;
     }
 
     public int getId() {
@@ -105,6 +111,33 @@ public final class Claim {
 
     public boolean isMember(UUID playerId) {
         return playerId != null && (isOwner(playerId) || isTrusted(playerId));
+    }
+
+    public UUID getRenter() {
+        return renter;
+    }
+
+    public void setRenter(UUID renter) {
+        this.renter = renter;
+        if (renter != null) {
+            this.trusted.add(renter);
+        }
+    }
+
+    public double getRentPrice() {
+        return rentPrice;
+    }
+
+    public void setRentPrice(double rentPrice) {
+        this.rentPrice = Math.max(0, rentPrice);
+    }
+
+    public long getNextRentDue() {
+        return nextRentDue;
+    }
+
+    public void setNextRentDue(long nextRentDue) {
+        this.nextRentDue = nextRentDue;
     }
 
     public String getOwnerName() {
