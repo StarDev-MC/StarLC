@@ -33,10 +33,12 @@ public final class RealEstateClaims extends JavaPlugin {
     private NamespacedKey claimIdKey;
     private NamespacedKey wandKey;
     private AdminClaimListGui adminClaimListGui;
+    private PlayerClaimListGui playerClaimListGui;
 
     private static final Component PURCHASE_TITLE = Component.text("Purchase Land");
     private static final Component CLAIM_INFO_TITLE = Component.text("Claim Info");
     private static final Component MYCLAIMS_TITLE = Component.text("My Claims");
+    private static final Component TELEPORT_CONFIRM_TITLE = Component.text("Confirm Teleport");
 
     @Override
     public void onEnable() {
@@ -45,6 +47,7 @@ public final class RealEstateClaims extends JavaPlugin {
         claimIdKey = new NamespacedKey(this, "claim-id");
         wandKey = new NamespacedKey(this, "realestate-wand");
         adminClaimListGui = new AdminClaimListGui(this);
+        playerClaimListGui = new PlayerClaimListGui(this);
 
         claimManager = new ClaimManager(this);
         claimManager.loadClaims();
@@ -131,6 +134,8 @@ public final class RealEstateClaims extends JavaPlugin {
         getCommand("lcremove").setExecutor(new LcRemoveCommand(this));
         getCommand("lcreset").setExecutor(new LcResetCommand(this));
         getCommand("lcadminlist").setExecutor(new LcAdminListCommand(this, adminClaimListGui));
+        getCommand("tpclaim").setExecutor(new TpClaimCommand(this));
+        getCommand("playerclaims").setExecutor(new PlayerClaimsCommand(this, playerClaimListGui));
         getCommand("lctrust").setExecutor(new LcTrustCommand(this));
         getCommand("lcuntrust").setExecutor(new LcUntrustCommand(this));
         getCommand("lclist").setExecutor(new LcListCommand(this));
@@ -172,6 +177,10 @@ public final class RealEstateClaims extends JavaPlugin {
 
     public Component getMyClaimsTitle() {
         return MYCLAIMS_TITLE;
+    }
+
+    public Component getTeleportConfirmTitle() {
+        return TELEPORT_CONFIRM_TITLE;
     }
 
     public boolean hasTeleportCooldown(UUID playerId) {
@@ -245,6 +254,28 @@ public final class RealEstateClaims extends JavaPlugin {
         infoMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         info.setItemMeta(infoMeta);
         inventory.setItem(13, info);
+        player.openInventory(inventory);
+    }
+
+    public void openTeleportConfirmGui(Player player, Claim claim) {
+        Inventory inventory = Bukkit.createInventory(null, 9, TELEPORT_CONFIRM_TITLE);
+        ItemStack confirm = new ItemStack(Material.GREEN_WOOL);
+        ItemMeta confirmMeta = confirm.getItemMeta();
+        confirmMeta.displayName(Component.text("Confirm Teleport", net.kyori.adventure.text.format.NamedTextColor.GREEN));
+        confirmMeta.lore(List.of(Component.text("Teleport to claim #" + claim.getId())));
+        confirmMeta.getPersistentDataContainer().set(claimIdKey, org.bukkit.persistence.PersistentDataType.INTEGER, claim.getId());
+        confirmMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        confirm.setItemMeta(confirmMeta);
+
+        ItemStack cancel = new ItemStack(Material.RED_WOOL);
+        ItemMeta cancelMeta = cancel.getItemMeta();
+        cancelMeta.displayName(Component.text("Cancel", net.kyori.adventure.text.format.NamedTextColor.RED));
+        cancelMeta.lore(List.of(Component.text("Close without teleporting.")));
+        cancelMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        cancel.setItemMeta(cancelMeta);
+
+        inventory.setItem(3, confirm);
+        inventory.setItem(5, cancel);
         player.openInventory(inventory);
     }
 

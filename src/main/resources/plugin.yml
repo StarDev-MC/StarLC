@@ -59,6 +59,14 @@ commands:
   myclaims:
     description: Open your owned claim list.
     permission: realestate.command
+  tpclaim:
+    description: Teleport to a claim sign or open your claim GUI.
+    usage: /tpclaim [id]
+    permission: realestate.command
+  playerclaims:
+    description: (Admin) Show all claims of a player with teleport/info GUI.
+    usage: /playerclaims <player> [page]
+    permission: realestate.admin
 permissions:
   realestate.admin:
     description: Full administration access for RealEstateClaims.

@@ -107,6 +107,34 @@ public final class InventoryClickListener implements Listener {
             player.sendMessage(Component.text("You rented land #" + claim.getId() + " for $" + rentPrice + " (daily).").color(net.kyori.adventure.text.format.NamedTextColor.GREEN));
             return;
         }
+        if (title.equals(plugin.getTeleportConfirmTitle())) {
+            event.setCancelled(true);
+            ItemStack item = event.getCurrentItem();
+            if (item == null || item.getType() == Material.AIR) return;
+            ItemMeta meta = item.getItemMeta();
+            if (meta == null) return;
+            if (item.getType() == Material.RED_WOOL) {
+                event.getWhoClicked().closeInventory();
+                return;
+            }
+            if (item.getType() != Material.GREEN_WOOL) return;
+            Integer claimId = meta.getPersistentDataContainer().get(plugin.getClaimIdKey(), PersistentDataType.INTEGER);
+            if (claimId == null) {
+                event.getWhoClicked().closeInventory();
+                return;
+            }
+            Claim claim = plugin.getClaimManager().getClaim(claimId);
+            if (claim == null || claim.getSignLocation() == null) {
+                ((org.bukkit.entity.Player) event.getWhoClicked()).sendMessage(Component.text("Claim sign is no longer available.").color(net.kyori.adventure.text.format.NamedTextColor.RED));
+                event.getWhoClicked().closeInventory();
+                return;
+            }
+            var player = (org.bukkit.entity.Player) event.getWhoClicked();
+            player.teleport(claim.getSignLocation().add(0.5, 1, 0.5));
+            player.closeInventory();
+            player.sendMessage(Component.text("Teleported to claim sign for claim #" + claim.getId() + ".").color(net.kyori.adventure.text.format.NamedTextColor.GREEN));
+            return;
+        }
         if (title.equals(plugin.getMyClaimsTitle())) {
             event.setCancelled(true);
             ItemStack item = event.getCurrentItem();
