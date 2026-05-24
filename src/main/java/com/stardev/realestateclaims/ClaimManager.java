@@ -65,6 +65,7 @@ public final class ClaimManager {
                 indexClaim(claim);
             }
         }
+        recomputeNextId();
     }
 
     public void reloadClaims() {
@@ -209,8 +210,17 @@ public final class ClaimManager {
         Claim removed = claims.remove(id);
         if (removed != null) {
             unindexClaim(removed);
+            recomputeNextId();
             saveClaims();
         }
+    }
+
+    private void recomputeNextId() {
+        int id = 1;
+        while (claims.containsKey(id)) {
+            id++;
+        }
+        nextId = id;
     }
 
     public void updateClaim(Claim claim) {
@@ -273,15 +283,15 @@ public final class ClaimManager {
         if (!(block.getState() instanceof org.bukkit.block.Sign sign)) {
             return;
         }
-        sign.line(0, net.kyori.adventure.text.Component.text("[Land]"));
+        sign.line(0, net.kyori.adventure.text.Component.text("[Land]", net.kyori.adventure.text.format.NamedTextColor.AQUA).decorate(net.kyori.adventure.text.format.TextDecoration.BOLD));
         if (!claim.isPurchased()) {
-            sign.line(1, net.kyori.adventure.text.Component.text("Land #" + claim.getId() + " For Sale"));
-            sign.line(2, net.kyori.adventure.text.Component.text("$" + claim.getPrice()));
-            sign.line(3, net.kyori.adventure.text.Component.text("Right click to buy"));
+            sign.line(1, net.kyori.adventure.text.Component.text("Land #" + claim.getId() + " For Sale", net.kyori.adventure.text.format.NamedTextColor.YELLOW));
+            sign.line(2, net.kyori.adventure.text.Component.text("$" + claim.getPrice(), net.kyori.adventure.text.format.NamedTextColor.GREEN));
+            sign.line(3, net.kyori.adventure.text.Component.text("Right click to buy", net.kyori.adventure.text.format.NamedTextColor.GRAY).decorate(net.kyori.adventure.text.format.TextDecoration.ITALIC));
         } else {
-            sign.line(1, net.kyori.adventure.text.Component.text("Owned " + claim.getOwnerName()));
-            sign.line(2, net.kyori.adventure.text.Component.text("Claim #" + claim.getId()));
-            sign.line(3, net.kyori.adventure.text.Component.text("Trusted: " + claim.getTrusted().size()));
+            sign.line(1, net.kyori.adventure.text.Component.text("Owned " + claim.getOwnerName(), net.kyori.adventure.text.format.NamedTextColor.GOLD));
+            sign.line(2, net.kyori.adventure.text.Component.text("Claim #" + claim.getId(), net.kyori.adventure.text.format.NamedTextColor.YELLOW));
+            sign.line(3, net.kyori.adventure.text.Component.text("Trusted: " + claim.getTrusted().size(), net.kyori.adventure.text.format.NamedTextColor.GRAY));
         }
         sign.update(true);
     }

@@ -3,6 +3,7 @@ package com.stardev.realestateclaims;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.Sign;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -10,10 +11,15 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityInteractEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -31,7 +37,16 @@ public final class ProtectionListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
-        if (!canUse(event.getPlayer(), event.getBlock().getLocation())) {
+        Block block = event.getBlock();
+        // Prevent breaking of claim signs unless player has admin permission
+        if (block.getState() instanceof Sign) {
+            Claim claim = plugin.getClaimManager().getClaimBySignLocation(block.getLocation());
+            if (claim != null && !event.getPlayer().hasPermission("realestate.admin")) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+        if (!canUse(event.getPlayer(), block.getLocation())) {
             event.setCancelled(true);
         }
     }
@@ -129,6 +144,52 @@ public final class ProtectionListener implements Listener {
         Claim claim = plugin.getClaimManager().getClaimAt(event.getBlock().getLocation());
         if (claim != null && !(event.getEntity() instanceof Player)) {
             event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onCreatureSpawn(CreatureSpawnEvent event) {
+        Claim claim = plugin.getClaimManager().getClaimAt(event.getLocation());
+        if (claim != null) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBlockBurn(BlockBurnEvent event) {
+        Claim claim = plugin.getClaimManager().getClaimAt(event.getBlock().getLocation());
+        if (claim != null) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBlockIgnite(BlockIgniteEvent event) {
+        Claim claim = plugin.getClaimManager().getClaimAt(event.getBlock().getLocation());
+        if (claim != null) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+        for (Block b : event.getBlocks()) {
+            Claim claim = plugin.getClaimManager().getClaimAt(b.getLocation());
+            if (claim != null) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        for (Block b : event.getBlocks()) {
+            Claim claim = plugin.getClaimManager().getClaimAt(b.getLocation());
+            if (claim != null) {
+                event.setCancelled(true);
+                return;
+            }
         }
     }
 
