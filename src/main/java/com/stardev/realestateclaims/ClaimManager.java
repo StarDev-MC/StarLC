@@ -114,6 +114,19 @@ public final class ClaimManager {
             }
         }
         Claim claim = new Claim(id, worldName, Math.min(x1, x2), Math.max(x1, x2), Math.min(z1, z2), Math.max(z1, z2), price, owner, trusted, purchased, signLocation);
+        // load renting fields
+        if (section.isDouble("rent-price") || section.isInt("rent-price")) {
+            claim.setRentPrice(section.getDouble("rent-price", plugin.getConfig().getDouble("default-rent", 100.0)));
+        }
+        if (section.isString("renter")) {
+            try {
+                claim.setRenter(UUID.fromString(section.getString("renter")));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        if (section.isLong("next-rent-due") || section.isInt("next-rent-due")) {
+            claim.setNextRentDue(section.getLong("next-rent-due", 0L));
+        }
         return claim;
     }
 
@@ -191,6 +204,9 @@ public final class ClaimManager {
             section.set("owner", claim.getOwner() == null ? null : claim.getOwner().toString());
             section.set("purchased", claim.isPurchased());
             section.set("trusted", claim.getTrusted().stream().map(UUID::toString).toList());
+            section.set("rent-price", claim.getRentPrice());
+            section.set("renter", claim.getRenter() == null ? null : claim.getRenter().toString());
+            section.set("next-rent-due", claim.getNextRentDue());
             if (claim.getSignLocation() != null) {
                 ConfigurationSection signSection = section.createSection("sign-location");
                 signSection.set("world", claim.getSignLocation().getWorld().getName());
@@ -213,6 +229,30 @@ public final class ClaimManager {
             recomputeNextId();
             saveClaims();
         }
+    }
+
+    public void resetClaim(int id) {
+        Claim claim = claims.get(id);
+        if (claim == null) {
+            return;
+        }
+        claim.setOwner(null);
+        claim.setRenter(null);
+        claim.getTrusted().clear();
+        claim.setNextRentDue(0L);
+        claim.setRentPrice(0.0);
+        saveClaims();
+    }
+
+    public void resetAllClaims() {
+        for (Claim claim : claims.values()) {
+            claim.setOwner(null);
+            claim.setRenter(null);
+            claim.getTrusted().clear();
+            claim.setNextRentDue(0L);
+            claim.setRentPrice(0.0);
+        }
+        saveClaims();
     }
 
     private void recomputeNextId() {
@@ -287,11 +327,12 @@ public final class ClaimManager {
         if (!claim.isPurchased()) {
             sign.line(1, net.kyori.adventure.text.Component.text("Land #" + claim.getId() + " For Sale", net.kyori.adventure.text.format.NamedTextColor.YELLOW));
             sign.line(2, net.kyori.adventure.text.Component.text("$" + claim.getPrice(), net.kyori.adventure.text.format.NamedTextColor.GREEN));
-            sign.line(3, net.kyori.adventure.text.Component.text("Right click to buy", net.kyori.adventure.text.format.NamedTextColor.GRAY).decorate(net.kyori.adventure.text.format.TextDecoration.ITALIC));
+            sign.line(3, net.kyori.adventure.text.Component.text("Right click to buy (or rent)", net.kyori.adventure.text.format.NamedTextColor.GRAY).decorate(net.kyori.adventure.text.format.TextDecoration.ITALIC));
         } else {
             sign.line(1, net.kyori.adventure.text.Component.text("Owned " + claim.getOwnerName(), net.kyori.adventure.text.format.NamedTextColor.GOLD));
             sign.line(2, net.kyori.adventure.text.Component.text("Claim #" + claim.getId(), net.kyori.adventure.text.format.NamedTextColor.YELLOW));
-            sign.line(3, net.kyori.adventure.text.Component.text("Trusted: " + claim.getTrusted().size(), net.kyori.adventure.text.format.NamedTextColor.GRAY));
+            String renterLine = claim.getRenter() == null ? "Trusted: " + claim.getTrusted().size() : "Rented by: " + Bukkit.getOfflinePlayer(claim.getRenter()).getName();
+            sign.line(3, net.kyori.adventure.text.Component.text(renterLine, net.kyori.adventure.text.format.NamedTextColor.GRAY));
         }
         sign.update(true);
     }

@@ -5,6 +5,7 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
@@ -53,6 +54,44 @@ public final class RealEstateClaims extends JavaPlugin {
 
         registerListeners();
         registerCommands();
+        // Schedule rent collection check every hour (real-life hour)
+        long ticksPerHour = 20L * 60L * 60L;
+        long overdueGraceMillis = 60L * 60L * 1000L;
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            long now = System.currentTimeMillis();
+            for (Claim claim : claimManager.getAllClaims()) {
+                UUID renter = claim.getRenter();
+                if (renter == null) continue;
+                long nextDue = claim.getNextRentDue();
+                if (nextDue <= 0 || nextDue > now) continue;
+                double rent = claim.getRentPrice() > 0 ? claim.getRentPrice() : getConfig().getDouble("default-rent", 100.0);
+                OfflinePlayer off = Bukkit.getOfflinePlayer(renter);
+                if (now >= nextDue + overdueGraceMillis) {
+                    // Evict if rent has been overdue for more than one hour
+                    claim.getTrusted().remove(renter);
+                    claim.setRenter(null);
+                    claim.setNextRentDue(0L);
+                    claim.setOwner(claim.getOwner());
+                    claimManager.updateClaim(claim);
+                    claimManager.updateSign(claim);
+                    if (off.isOnline() && off.getPlayer() != null) {
+                        off.getPlayer().sendMessage(Component.text("You were evicted from rented land #" + claim.getId() + " after missing rent for over one hour.").color(net.kyori.adventure.text.format.NamedTextColor.RED));
+                    }
+                    continue;
+                }
+                if (economy.getBalance(off) >= rent) {
+                    economy.withdrawPlayer(off, rent);
+                    String recipientName = getConfig().getString("rent-recipient", "");
+                    if (recipientName != null && !recipientName.isBlank()) {
+                        economy.depositPlayer(Bukkit.getOfflinePlayer(recipientName), rent);
+                    } else if (claim.getOwner() != null) {
+                        economy.depositPlayer(Bukkit.getOfflinePlayer(claim.getOwner()), rent);
+                    }
+                    claim.setNextRentDue(nextDue + 24L * 60L * 60L * 1000L);
+                    claimManager.updateClaim(claim);
+                }
+            }
+        }, ticksPerHour, ticksPerHour);
     }
 
     @Override
@@ -86,6 +125,7 @@ public final class RealEstateClaims extends JavaPlugin {
         getCommand("lcdelete").setExecutor(new LcDeleteCommand(this));
         getCommand("lcinfo").setExecutor(new LcInfoCommand(this));
         getCommand("lcreload").setExecutor(new LcReloadCommand(this));
+        getCommand("lcremove").setExecutor(new LcRemoveCommand(this));
         getCommand("lctrust").setExecutor(new LcTrustCommand(this));
         getCommand("lcuntrust").setExecutor(new LcUntrustCommand(this));
         getCommand("lclist").setExecutor(new LcListCommand(this));
@@ -164,6 +204,18 @@ public final class RealEstateClaims extends JavaPlugin {
         cancel.setItemMeta(cancelMeta);
 
         inventory.setItem(11, confirm);
+        // Rent option
+        ItemStack rent = new ItemStack(Material.BLUE_WOOL);
+        ItemMeta rentMeta = rent.getItemMeta();
+        double rentPrice = claim.getRentPrice() > 0 ? claim.getRentPrice() : getConfig().getDouble("default-rent", 100.0);
+        rentMeta.displayName(Component.text("Rent (daily)", net.kyori.adventure.text.format.NamedTextColor.AQUA));
+        rentMeta.lore(List.of(
+            Component.text("First day: $" + rentPrice),
+            Component.text("Click to rent this land for one day.")));
+        rentMeta.getPersistentDataContainer().set(claimIdKey, org.bukkit.persistence.PersistentDataType.INTEGER, claim.getId());
+        rentMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        rent.setItemMeta(rentMeta);
+        inventory.setItem(13, rent);
         inventory.setItem(15, cancel);
         player.openInventory(inventory);
     }

@@ -1,6 +1,8 @@
 package com.stardev.realestateclaims;
 
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -33,7 +35,8 @@ public final class InventoryClickListener implements Listener {
                 event.getWhoClicked().closeInventory();
                 return;
             }
-            if (item.getType() != Material.GREEN_WOOL) {
+            // GREEN_WOOL = buy, BLUE_WOOL = rent
+            if (item.getType() != Material.GREEN_WOOL && item.getType() != Material.BLUE_WOOL) {
                 return;
             }
             Integer claimId = meta.getPersistentDataContainer().get(plugin.getClaimIdKey(), PersistentDataType.INTEGER);
@@ -46,17 +49,43 @@ public final class InventoryClickListener implements Listener {
                 return;
             }
             var player = (org.bukkit.entity.Player) event.getWhoClicked();
-            if (plugin.getEconomy().getBalance(player) < claim.getPrice()) {
-                player.sendMessage(Component.text("You do not have enough money to purchase this land.").color(net.kyori.adventure.text.format.NamedTextColor.RED));
+            if (item.getType() == Material.GREEN_WOOL) {
+                // Buy flow
+                if (plugin.getEconomy().getBalance(player) < claim.getPrice()) {
+                    player.sendMessage(Component.text("You do not have enough money to purchase this land.").color(net.kyori.adventure.text.format.NamedTextColor.RED));
+                    return;
+                }
+                plugin.getEconomy().withdrawPlayer(player, claim.getPrice());
+                claim.setOwner(player.getUniqueId());
+                claim.getTrusted().add(player.getUniqueId());
+                plugin.getClaimManager().updateClaim(claim);
+                plugin.getClaimManager().updateSign(claim);
+                player.closeInventory();
+                player.sendMessage(Component.text("You purchased land #" + claim.getId() + ".").color(net.kyori.adventure.text.format.NamedTextColor.GREEN));
                 return;
             }
-            plugin.getEconomy().withdrawPlayer(player, claim.getPrice());
-            claim.setOwner(player.getUniqueId());
-            claim.getTrusted().add(player.getUniqueId());
+            // Rent flow (BLUE_WOOL)
+            double rentPrice = claim.getRentPrice() > 0 ? claim.getRentPrice() : plugin.getConfig().getDouble("default-rent", 100.0);
+            if (plugin.getEconomy().getBalance(player) < rentPrice) {
+                player.sendMessage(Component.text("You do not have enough money to rent this land.").color(net.kyori.adventure.text.format.NamedTextColor.RED));
+                return;
+            }
+            // charge first day immediately
+            plugin.getEconomy().withdrawPlayer(player, rentPrice);
+            // deposit to recipient (owner or configured recipient)
+            String recipientName = plugin.getConfig().getString("rent-recipient", "");
+            if (recipientName != null && !recipientName.isBlank()) {
+                plugin.getEconomy().depositPlayer(Bukkit.getOfflinePlayer(recipientName), rentPrice);
+            } else if (claim.getOwner() != null) {
+                plugin.getEconomy().depositPlayer(Bukkit.getOfflinePlayer(claim.getOwner()), rentPrice);
+            }
+            claim.setRenter(player.getUniqueId());
+            claim.setRentPrice(rentPrice);
+            claim.setNextRentDue(System.currentTimeMillis() + 24L * 60L * 60L * 1000L);
             plugin.getClaimManager().updateClaim(claim);
             plugin.getClaimManager().updateSign(claim);
             player.closeInventory();
-            player.sendMessage(Component.text("You purchased land #" + claim.getId() + ".").color(net.kyori.adventure.text.format.NamedTextColor.GREEN));
+            player.sendMessage(Component.text("You rented land #" + claim.getId() + " for $" + rentPrice + " (daily).").color(net.kyori.adventure.text.format.NamedTextColor.GREEN));
             return;
         }
         if (title.equals(plugin.getMyClaimsTitle())) {

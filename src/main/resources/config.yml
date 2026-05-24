@@ -1,2 +1,5 @@
 default-price: 5000.0
 teleport-cooldown: 30
+default-rent: 100.0
+# If set, rent will be deposited to this player name (supports Bedrock names starting with a dot). If empty, rent goes to claim owner.
+rent-recipient: ""

@@ -26,6 +26,10 @@ commands:
   lcreload:
     description: Reload config and claim data.
     permission: realestate.admin
+  lcremove:
+    description: Remove owner and renter from a claim or all claims.
+    usage: /lcremove <id|all>
+    permission: realestate.admin
   lctrust:
     description: Trust a player inside your claim.
     usage: /lctrust <player>
