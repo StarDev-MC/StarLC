@@ -65,6 +65,21 @@ public final class InventoryClickListener implements Listener {
                 return;
             }
             // Rent flow (BLUE_WOOL)
+            // prevent renting if already rented by someone else
+            if (claim.getRenter() != null) {
+                if (claim.getRenter().equals(player.getUniqueId())) {
+                    long nextDue = claim.getNextRentDue();
+                    if (nextDue > System.currentTimeMillis()) {
+                        player.sendMessage(Component.text("You already rent this land. Next rent due: " + java.time.Instant.ofEpochMilli(nextDue).toString()).color(net.kyori.adventure.text.format.NamedTextColor.RED));
+                    } else {
+                        player.sendMessage(Component.text("You already rent this land and your payment is overdue. Contact the owner.").color(net.kyori.adventure.text.format.NamedTextColor.RED));
+                    }
+                    return;
+                }
+                player.sendMessage(Component.text("This land is already rented by someone else.").color(net.kyori.adventure.text.format.NamedTextColor.RED));
+                return;
+            }
+
             double rentPrice = claim.getRentPrice() > 0 ? claim.getRentPrice() : plugin.getConfig().getDouble("default-rent", 100.0);
             if (plugin.getEconomy().getBalance(player) < rentPrice) {
                 player.sendMessage(Component.text("You do not have enough money to rent this land.").color(net.kyori.adventure.text.format.NamedTextColor.RED));

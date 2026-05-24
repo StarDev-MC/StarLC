@@ -233,6 +233,9 @@ public final class RealEstateClaims extends JavaPlugin {
         lore.add(Component.text("X: " + claim.getMinX() + " to " + claim.getMaxX()));
         lore.add(Component.text("Z: " + claim.getMinZ() + " to " + claim.getMaxZ()));
         lore.add(Component.text("Trusted: " + claim.getTrusted().size()));
+        lore.add(Component.text("Renter: " + (claim.getRenter() == null ? "None" : Bukkit.getOfflinePlayer(claim.getRenter()).getName())));
+        long nextDue = claim.getNextRentDue();
+        lore.add(Component.text("Next rent due: " + (nextDue <= 0 ? "None" : java.time.Instant.ofEpochMilli(nextDue).toString())));
         infoMeta.lore(lore);
         infoMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         info.setItemMeta(infoMeta);

@@ -324,14 +324,41 @@ public final class ClaimManager {
             return;
         }
         sign.line(0, net.kyori.adventure.text.Component.text("[Land]", net.kyori.adventure.text.format.NamedTextColor.AQUA).decorate(net.kyori.adventure.text.format.TextDecoration.BOLD));
-        if (!claim.isPurchased()) {
+        UUID renter = claim.getRenter();
+        long now = System.currentTimeMillis();
+        if (renter != null) {
+            String renterName = Bukkit.getOfflinePlayer(renter).getName();
+            sign.line(1, net.kyori.adventure.text.Component.text("Rented by: " + (renterName == null ? "Unknown" : renterName), net.kyori.adventure.text.format.NamedTextColor.GOLD));
+            sign.line(2, net.kyori.adventure.text.Component.text("Claim #" + claim.getId(), net.kyori.adventure.text.format.NamedTextColor.YELLOW));
+            long nextDue = claim.getNextRentDue();
+            String timeLine;
+            if (nextDue <= 0) {
+                timeLine = "Next due: unknown";
+            } else if (nextDue <= now) {
+                timeLine = "Rent overdue";
+            } else {
+                long remaining = nextDue - now;
+                long days = remaining / (24L * 60L * 60L * 1000L);
+                long hours = (remaining / (60L * 60L * 1000L)) % 24L;
+                long minutes = (remaining / (60L * 1000L)) % 60L;
+                if (days > 0) {
+                    timeLine = "Due in: " + days + "d " + hours + "h";
+                } else if (hours > 0) {
+                    timeLine = "Due in: " + hours + "h " + minutes + "m";
+                } else {
+                    timeLine = "Due in: " + minutes + "m";
+                }
+            }
+            sign.line(3, net.kyori.adventure.text.Component.text(timeLine, net.kyori.adventure.text.format.NamedTextColor.GRAY));
+        } else if (!claim.isPurchased()) {
             sign.line(1, net.kyori.adventure.text.Component.text("Land #" + claim.getId() + " For Sale", net.kyori.adventure.text.format.NamedTextColor.YELLOW));
             sign.line(2, net.kyori.adventure.text.Component.text("$" + claim.getPrice(), net.kyori.adventure.text.format.NamedTextColor.GREEN));
-            sign.line(3, net.kyori.adventure.text.Component.text("Right click to buy (or rent)", net.kyori.adventure.text.format.NamedTextColor.GRAY).decorate(net.kyori.adventure.text.format.TextDecoration.ITALIC));
+            double rentPrice = claim.getRentPrice() > 0 ? claim.getRentPrice() : plugin.getConfig().getDouble("default-rent", 100.0);
+            sign.line(3, net.kyori.adventure.text.Component.text("Right click to buy or rent ($" + rentPrice + ")", net.kyori.adventure.text.format.NamedTextColor.GRAY).decorate(net.kyori.adventure.text.format.TextDecoration.ITALIC));
         } else {
             sign.line(1, net.kyori.adventure.text.Component.text("Owned " + claim.getOwnerName(), net.kyori.adventure.text.format.NamedTextColor.GOLD));
             sign.line(2, net.kyori.adventure.text.Component.text("Claim #" + claim.getId(), net.kyori.adventure.text.format.NamedTextColor.YELLOW));
-            String renterLine = claim.getRenter() == null ? "Trusted: " + claim.getTrusted().size() : "Rented by: " + Bukkit.getOfflinePlayer(claim.getRenter()).getName();
+            String renterLine = "Trusted: " + claim.getTrusted().size();
             sign.line(3, net.kyori.adventure.text.Component.text(renterLine, net.kyori.adventure.text.format.NamedTextColor.GRAY));
         }
         sign.update(true);
